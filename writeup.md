@@ -13,6 +13,8 @@
 [image8]: ./result/euler.png
 [image9]: ./result/debug.png
 [image10]: ./result/pick_result.png
+[image11]: ./result/homogeneous_transformation.png
+[image12]: ./result/composed_transform.png
 
 ## [Rubric](https://review.udacity.com/#!/rubrics/972/view) Points
 ### Here I will consider the rubric points individually and describe how I addressed each point in my implementation.  
@@ -47,6 +49,11 @@ dh_table = {
 ```
 
 #### 2. Using the DH parameter table you derived earlier, create individual transformation matrices about each joint. In addition, also generate a generalized homogeneous transform between base_link and gripper_link using only end-effector(gripper) pose.
+Homogeneous transformation between neighboring links is:
+![alt text][image11]  
+
+For each link is actually composed of four individual transforms, 2 rotations and 2 translations, performed in the order shown as:
+![alt text][image12]  
 
 To abstract the same function, I defined a common method named `generate_homegeneous_transform`. Then I could create individual transformation matrices by one statement.
 ```python
@@ -70,7 +77,10 @@ T3_4 = generate_homegeneous_transform(alpha3, a3, d4, q4).subs(dh_table)
 T4_5 = generate_homegeneous_transform(alpha4, a4, d5, q5).subs(dh_table)
 T5_6 = generate_homegeneous_transform(alpha5, a5, d6, q6).subs(dh_table)
 T6_G = generate_homegeneous_transform(alpha6, a6, d7, q7).subs(dh_table)
+```
 
+Homogeneous transform matrix from base_link to gripper_link:
+```python
 T0_E = T0_1 * T1_2 * T2_3 * T3_4 * T4_5 * T5_6 * T6_G
 ```
 
