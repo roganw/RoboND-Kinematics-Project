@@ -201,3 +201,8 @@ After the debug process got a decent result, I modified `inverse_kinematics.laun
 The directory of test video is `/result/result_video.mp4`.  
 
 
+#### 3. performance
+To speed up the code, symbols and matrices are defined as global parameters, so that they would be created just once.
+
+
+

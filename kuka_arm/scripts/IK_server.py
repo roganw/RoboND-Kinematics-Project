@@ -54,6 +54,49 @@ def rot_z(q):
     return R_z
 
 
+# Define global parameters to advance performance
+# Create symbols
+alpha0, alpha1, alpha2, alpha3, alpha4, alpha5, alpha6 = symbols('alpha0:7')
+a0, a1, a2, a3, a4, a5, a6 = symbols('a0:7')
+q1, q2, q3, q4, q5, q6, q7 = symbols('q1:8')
+d1, d2, d3, d4, d5, d6, d7 = symbols('d1:8')
+
+# Create Modified DH parameters
+dh_table = {
+    alpha0: 0, a0: 0, d1: 0.75, q1: q1,
+    alpha1: -pi / 2., a1: 0.35, d2: 0, q2: q2 - pi / 2,
+    alpha2: 0, a2: 1.25, d3: 0, q3: q3,
+    alpha3: -pi / 2., a3: -0.054, d4: 1.50, q4: q4,
+    alpha4: pi / 2., a4: 0, d5: 0, q5: q5,
+    alpha5: -pi / 2., a5: 0, d6: 0, q6: q6,
+    alpha6: 0, a6: 0, d7: 0.303, q7: 0,
+}
+
+# Create individual transformation matrices
+T0_1 = generate_homegeneous_transform(alpha0, a0, d1, q1).subs(dh_table)
+T1_2 = generate_homegeneous_transform(alpha1, a1, d2, q2).subs(dh_table)
+T2_3 = generate_homegeneous_transform(alpha2, a2, d3, q3).subs(dh_table)
+T3_4 = generate_homegeneous_transform(alpha3, a3, d4, q4).subs(dh_table)
+T4_5 = generate_homegeneous_transform(alpha4, a4, d5, q5).subs(dh_table)
+T5_6 = generate_homegeneous_transform(alpha5, a5, d6, q6).subs(dh_table)
+T6_G = generate_homegeneous_transform(alpha6, a6, d7, q7).subs(dh_table)
+
+# Extract rotation matrices from the transformation matrices
+T0_E = T0_1 * T1_2 * T2_3 * T3_4 * T4_5 * T5_6 * T6_G
+
+# EE Matrices
+# EE rotation matrix
+r, p, y = symbols('r p y')
+R_x = rot_x(r)
+R_y = rot_y(p)
+R_z = rot_z(y)
+
+R_EE = R_z * R_y * R_x
+R_Error = R_EE.subs({'r': 0, 'p': -pi / 2, 'y': pi})
+# R_Error = R_z.subs(y, pi) * R_y.subs(p, -pi/2)
+
+R_EE = R_EE * R_Error
+
 
 def handle_calculate_IK(req):
     rospy.loginfo("Received %s eef-poses from the plan" % len(req.poses))
@@ -82,48 +125,8 @@ def handle_calculate_IK(req):
 
             ### Your IK code here 
 
-            # Create symbols
-            alpha0, alpha1, alpha2, alpha3, alpha4, alpha5, alpha6 = symbols('alpha0:7')
-            a0, a1, a2, a3, a4, a5, a6 = symbols('a0:7')
-            q1, q2, q3, q4, q5, q6, q7 = symbols('q1:8')
-            d1, d2, d3, d4, d5, d6, d7 = symbols('d1:8')
-
-            # Create Modified DH parameters
-            dh_table = {
-                alpha0: 0,      a0: 0,      d1: 0.75,   q1: q1,
-                alpha1: -pi/2., a1: 0.35,   d2: 0,      q2: q2-pi/2,
-                alpha2: 0,      a2: 1.25,   d3: 0,      q3: q3,
-                alpha3: -pi/2., a3: -0.054, d4: 1.50,   q4: q4,
-                alpha4: pi/2.,  a4: 0,      d5: 0,      q5: q5,
-                alpha5: -pi/2., a5: 0,      d6: 0,      q6: q6,
-                alpha6: 0,      a6: 0,      d7: 0.303,  q7: 0,
-            }
-
-            # Create individual transformation matrices
-            T0_1 = generate_homegeneous_transform(alpha0, a0, d1, q1).subs(dh_table)
-            T1_2 = generate_homegeneous_transform(alpha1, a1, d2, q2).subs(dh_table)
-            T2_3 = generate_homegeneous_transform(alpha2, a2, d3, q3).subs(dh_table)
-            T3_4 = generate_homegeneous_transform(alpha3, a3, d4, q4).subs(dh_table)
-            T4_5 = generate_homegeneous_transform(alpha4, a4, d5, q5).subs(dh_table)
-            T5_6 = generate_homegeneous_transform(alpha5, a5, d6, q6).subs(dh_table)
-            T6_G = generate_homegeneous_transform(alpha6, a6, d7, q7).subs(dh_table)
-
-            # Extract rotation matrices from the transformation matrices
-            T0_E = T0_1 * T1_2 * T2_3 * T3_4 * T4_5 * T5_6 * T6_G
-
-
-            # EE Matrices
-            # EE rotation matrix
-            r, p, y = symbols('r p y')
-            R_x = rot_x(r)
-            R_y = rot_y(p)
-            R_z = rot_z(y)
-
-            R_EE = R_z * R_y * R_x
-            R_Error = R_EE.subs({'r': 0, 'p': -pi/2, 'y': pi})
-            # R_Error = R_z.subs(y, pi) * R_y.subs(p, -pi/2)
-
-            R_EE = R_EE * R_Error
+            global dh_table, R_EE, a1, a2, d1, d4, d7, q1, q2, q3, q4, q5, q6
+            global T0_1, T1_2, T2_3, T0_E
 
             # Compensate for rotation discrepancy between DH parameters and Gazebo
             R_EE = R_EE.subs({'r': roll, 'p': pitch, 'y': yaw})
